@@ -1,0 +1,36 @@
+{
+  "name": "mapbender/geo-transporter",
+  "description": "Transport geo data between databases",
+  "keywords": [
+    "geo",
+    "transport"
+  ],
+  "type": "library",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Daniel Egert",
+      "email": "Daniel.Egert@wheregroup.com",
+      "homepage": "https://github.com/danielegert"
+    },
+    {
+      "name": "Andriy Oblivantsev",
+      "email": "eslider@gmail.com",
+      "homepage": "https://github.com/eSlider"
+    }
+  ],
+  "require-dev": {
+    "phpunit/phpunit": ">=3.7",
+    "predis/predis": "~1.0",
+    "satooshi/php-coveralls": "~0.6"
+  },
+  "require": {
+    "php": ">=5.3.1"
+  },
+  "config": {
+    "bin-dir": "bin"
+  },
+  "autoload": {
+    "psr-0": { "GeoTransporter\\": "src/" }
+  }
+}
