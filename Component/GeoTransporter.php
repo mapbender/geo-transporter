@@ -80,6 +80,7 @@ class GeoTransporter
      */
     public function exportByMapping($locationId, $mappingId)
     {
+
         /** @var \Doctrine\DBAL\Driver\PDOSqlsrv\Connection $connection */
         $mapping = $this->getMapping($locationId, $mappingId);
         $source = $mapping["source"];
@@ -104,6 +105,7 @@ class GeoTransporter
         $this->insertTable($results,$db,$tableName,$hasExternalId,$source['geomColumn'],$source ['srid']);
 
     }
+
 
     /**
      * insert sqlite tables
@@ -278,16 +280,31 @@ class GeoTransporter
      * @param $mappings
      */
     public function exportDataHandler($locations,$mappings){
+
+
+
         if(!is_array($locations)){
+
             $locations = $this->getLocations();
+
+            if(!is_array($mappings)){
+                foreach($locations as $locationId => $location){
+                    $this->exportLocation($locationId);
+                }
+            } else {
+                foreach($locations as $locationId => $location){
+                    $this->exportLocationWithDefindMapping($locationId,$mappings);
+                }
+            }
         }
+
         if(!is_array($mappings)){
-            foreach($locations as $location){
-                $this->exportLocation($location);
+            foreach($locations as $locationId){
+                $this->exportLocation($locationId);
             }
         } else {
-            foreach($locations as $location){
-                $this->exportLocationWithDefindMapping($location,$mappings);
+            foreach($locations as $locationId){
+                $this->exportLocationWithDefindMapping($locationId,$mappings);
             }
         }
 
