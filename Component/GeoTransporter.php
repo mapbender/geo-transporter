@@ -5,7 +5,9 @@ namespace Mapbender\GeoTransporterBundle\Component;
 use Doctrine\ORM\Mapping as ORM;
 use Eslider\SpatialGeometry;
 use Eslider\SpatialiteShellDriver;
+use Mapbender\GeoTransporterBundle\Events\Event;
 use Symfony\Component\DependencyInjection\ContainerInterface;
+use Symfony\Component\EventDispatcher\EventDispatcher;
 
 /**
  * User: egert
@@ -14,6 +16,11 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  */
 class GeoTransporter
 {
+    /** Fires before mapping. */
+    const EVENT_START_EXPORT_MAPPING = 'startMapping';
+
+    /** Fires before start export location */
+    const EVENT_START_EXPORT_LOCATION = 'startExportLocation';
     /**
      * path to database template
      *
@@ -32,6 +39,9 @@ class GeoTransporter
     protected $db;
 
 
+    protected $dispatcher;
+
+
     /**
      * Location definitions
      */
@@ -45,6 +55,7 @@ class GeoTransporter
     {
         $this->container = $container;
         $this->locations = $this->container->getParameter("locations");
+        $this->dispatcher  = new EventDispatcher();
 
         //var_dump($this->locations);
     }
@@ -90,6 +101,12 @@ class GeoTransporter
         $columns = $this->getColumns($results,$source['geomColumn']);
         $hasExternalId = array_search('externId',$columns) !== false;
 
+        $this->dispatch(self::EVENT_START_EXPORT_MAPPING, array(
+            'mapping' => &$mapping,
+            'id' => $mappingId
+        ));
+
+
         /** @var SpatialiteShellDriver $db */
         $this->db = $db = $this->getDB($mapping['target']['path']);
 
@@ -119,6 +136,7 @@ class GeoTransporter
      */
     public function insertTable($results,$db,$tableName,$hasExternalId,$geomColumn,$srid){
         $insertArray = array();
+
         foreach($results as $row){
             $columns = array_keys($row);
             $key = array_search($geomColumn, $columns);
@@ -224,9 +242,8 @@ class GeoTransporter
      * @return SpatialiteShellDriver
      */
     public function createDB($dbpath){
-        return new SpatialiteShellDriver($dbpath,
-            "vendor/eslider/spatialite/bin/x64/mod_spatialite",
-            "vendor/eslider/spatialite/bin/x64/sqlite3");
+        $driver = new SpatialiteShellDriver($dbpath);
+        return $driver;
     }
 
     /**
@@ -247,6 +264,7 @@ class GeoTransporter
     public function exportLocation($locationId)
     {
         $location = $this->getLocation($locationId);
+        $this->dispatch(self::EVENT_START_EXPORT_LOCATION, array('location' => $location));
         foreach ($location["mapping"] as $mappingId => $mapping) {
             $mapping = $this->getMapping($locationId, $mappingId);
             $this->exportByMapping($locationId, $mappingId);
@@ -280,9 +298,6 @@ class GeoTransporter
      * @param $mappings
      */
     public function exportDataHandler($locations,$mappings){
-
-
-
         if(!is_array($locations)){
 
             $locations = $this->getLocations();
@@ -320,5 +335,24 @@ class GeoTransporter
         foreach ($mappings as $mappingId) {
             $this->exportByMapping($locationId, $mappingId);
         }
+    }
+
+    /**
+     * @param $eventName
+     * @param callable $callback Event listener
+     */
+    public function on($eventName, callable $callback)
+    {
+        $this->dispatcher->addListener($eventName, $callback);
+    }
+
+    /**
+     * @param $eventName
+     * @param array $eventData
+     * @internal param null|Event $event
+     */
+    public function dispatch($eventName, array $eventData = array())
+    {
+        $this->dispatcher->dispatch($eventName, new Event($eventData));
     }
 }
