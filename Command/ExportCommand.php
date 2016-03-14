@@ -2,6 +2,8 @@
 
 namespace Mapbender\GeoTransporterBundle\Command;
 
+use Mapbender\GeoTransporterBundle\Component\GeoTransporter;
+use Mapbender\GeoTransporterBundle\Events\Event;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -20,6 +22,7 @@ class ExportCommand extends ContainerAwareCommand {
                 new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "l"),
                 new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "m")
             ))
+
             ->setDescription('Export all Tables in spatialite.')
             ->setHelp('Export all Tables in spatialite.')
             ->setName('geo:export');
@@ -27,8 +30,18 @@ class ExportCommand extends ContainerAwareCommand {
 
     protected function execute(InputInterface $input, OutputInterface $output) {
 
+        $geoTransporter = $this->getContainer()->get('geo_transporter');
+        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_MAPPING, function (Event $e) use ($output) {
+            $data = $e->getData();
+            $output->writeln("Start export: ". $data["id"]);
+        });
+        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_LOCATION, function (Event $e) use ($output) {
+            $data = $e->getData();
+            $location = $data["location"];
+            $output->writeln("Start export location: " . $location["name"]);
+        });
         if($input->getOption('all')){
-            $this->getContainer()->get('geo_transporter')->exportAll();
+            $geoTransporter->exportAll();
             die;
         }
 
@@ -39,7 +52,7 @@ class ExportCommand extends ContainerAwareCommand {
         $mappingIds = empty($mappingIds[0]) ? 'all' : $mappingIds;
 
 
-        $this->getContainer()->get('geo_transporter')->exportDataHandler($locationIds,$mappingIds);
+        $geoTransporter->exportDataHandler($locationIds,$mappingIds);
 
     }
 }
