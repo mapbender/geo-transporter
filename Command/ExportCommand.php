@@ -15,12 +15,14 @@ use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
  */
 class ExportCommand extends ContainerAwareCommand {
 
+    protected $output;
+
     protected function configure() {
         $this
             ->setDefinition(array(
-                new InputOption('all', null, InputOption::VALUE_NONE , "all"),
-                new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "l"),
-                new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "m")
+                new InputOption('all', null, InputOption::VALUE_NONE , "Export all locations and mappings"),
+                new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export location by name"),
+                new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export mapping by object name")
             ))
 
             ->setDescription('Export all Tables in spatialite.')
@@ -28,8 +30,20 @@ class ExportCommand extends ContainerAwareCommand {
             ->setName('geo:export');
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output) {
-
+    /**
+     * Executes the export command.
+     *
+     * @param InputInterface  $input  An InputInterface instance
+     * @param OutputInterface $output An OutputInterface instance
+     *
+     * @return null|int null or 0 if everything went fine, or an error code
+     *
+     * @throws \LogicException When this abstract method is not implemented
+     *
+     * @see setCode()
+     */
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
         $geoTransporter = $this->getContainer()->get('geo_transporter');
         $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_MAPPING, function (Event $e) use ($output) {
             $data = $e->getData();
