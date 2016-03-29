@@ -22,8 +22,8 @@ class ExportCommand extends ContainerAwareCommand {
         $this
             ->setDefinition(array(
                 new InputOption('all', null, InputOption::VALUE_NONE , "Export all locations and mappings"),
-                new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export location by name"),
-                new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export mapping by object name")
+                new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export location by name", "all"),
+                new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export mapping by object name", "all")
             ))
 
             ->setDescription('Export all Tables in spatialite.')
@@ -52,29 +52,27 @@ class ExportCommand extends ContainerAwareCommand {
             $data = $e->getData();
             switch ($e->getName()) {
                 case GeoTransporter::EVENT_START_EXPORT_MAPPING:
-                    $command->log("Start export: " . $data["id"]);
+                    $command->log("Export object: " . $data["id"]);
                     break;
                 case GeoTransporter::EVENT_START_EXPORT_LOCATION:
                     $location = $data["location"];
-                    $command->log("Start export location: " . $location["name"]);
+                    $command->log("Export location: " . $location["name"]);
                     break;
                 case GeoTransporter::EVENT_GET_DATABASE:
-                    $command->log("Get Database: " . $data['db']);
+                    $command->log("Get database: " . $data['db']);
                     break;
                 case GeoTransporter::EVENT_CREATE_TEMPLATE:
-                    $command->log("Template dosn't exist, create template, just a moment...");
+                    $command->log("Create spatialite template file. It's take some time. Please wait!");
                     break;
                 case GeoTransporter::EVENT_CREATE_NEW_DATABASE:
                     $dbName = $data['db'];
-                    $command->log("Create new Database: " . $dbName);
+                    $command->log("Create database: " . $dbName);
                     break;
                 case GeoTransporter::EVENT_DELETE_TABLE:
-                    $tableName = $data['tableName'];
-                    $command->log("Delete Table: " . $tableName);
+                    $command->log("Delete table: " . $data['tableName']);
                     break;
                 case GeoTransporter::EVENT_CREATE_TABLE:
-                    $location = $data["location"];
-                    $command->log("Start export location: " . $location["name"]);
+                    $command->log("Create table: " . $data["tableName"]);
                     break;
             }
         };
@@ -89,14 +87,12 @@ class ExportCommand extends ContainerAwareCommand {
 
         if ($input->getOption('all')) {
             $geoTransporter->exportAll();
-            return;
+        } else {
+            $geoTransporter->exportDataHandler(
+                $input->getOption('l'),
+                $input->getOption('m')
+            );
         }
-        $locationIds = $input->getOption('l');
-        $locationIds = empty($locationIds) ? 'all' : $locationIds;
-        $mappingIds  = $input->getOption('m');
-        $mappingIds  = empty($mappingIds[0]) ? 'all' : $mappingIds;
-
-        $geoTransporter->exportDataHandler($locationIds, $mappingIds);
     }
 
     /**
