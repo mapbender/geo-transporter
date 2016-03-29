@@ -1,0 +1,70 @@
+parameters:
+    database_driver: pdo_pgsql
+    database_host: localhost
+    database_port: ~
+    database_name: databasename
+    database_user: postgres
+    database_password: postgres
+    # Orte
+    locations:
+      # Location UID:
+      bonn:
+        name: Bonn city
+        mapping:
+          # mappingId UID
+          BEA:
+            source:
+              # optional
+              connection: default
+              srid: 4326
+              geomColumn: geom
+              type: point
+              # Export sql
+              sql: |
+                SELECT id, bea_nummer, ST_ASTEXT(wkb_geometry) as geom  FROM bea LIMIT 10
+            target:
+              path: app/db/bonn.sqlite
+              table: bea
+              charset: utf-8
+          BOV:
+            source:
+              # optional
+              connection: default
+              # Export sql, table bov für testzwecken
+              srid: 4326
+              type: point
+              sql: SELECT id, nummer, ST_ASTEXT(wkb_geometry) FROM ba LIMIT 10
+            target:
+              path: app/db/bonn.sqlite
+              table: BOV
+              charset: utf-8
+      Cologne:
+        name: Cologne city
+        mapping:
+          # mappingId UID
+          BEA:
+            source:
+              # optional
+              connection: default
+              srid: 4326
+              geomColumn: geom
+              type: point
+              # Export sql
+              sql: |
+                SELECT id, bea_nummer, ST_ASTEXT(wkb_geometry) as geom  FROM bea LIMIT 10
+            target:
+              path: app/db/cologne.sqlite
+              table: bea
+              charset: utf-8
+          BOV:
+            source:
+              # optional
+              connection: default
+              # Export sql, table bov für testzwecken
+              srid: 4326
+              type: point
+              sql: SELECT id, nummer, ST_ASTEXT(wkb_geometry) FROM ba LIMIT 10
+            target:
+              path: app/db/cologne.sqlite
+              table: BOV
+              charset: utf-8

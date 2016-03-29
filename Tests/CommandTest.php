@@ -2,66 +2,65 @@
 
 namespace Mapbender\GeoTransporterBundle\Tests;
 
-use Eslider\SpatialGeometry;
-use Eslider\SpatialiteShellDriver;
+use Eslider\SpatialiteNativeDriver;
+use Mapbender\GeoTransporterBundle\Command\ExportCommand;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Console\Application;
+use Symfony\Component\Console\Input\StringInput;
+use Symfony\Component\Console\Output\StreamOutput;
+use Symfony\Component\Console\Tester\CommandTester;
 
 class CommandTest extends WebTestCase
 {
 
     const DB_PATH = "app/db/spatilite.sqlite";
-    /** @var  SpatialiteShellDriver */
+
+    /** @var  SpatialiteNativeDriver */
     protected $db;
 
     protected function setUp()
     {
-        $this->db = new SpatialiteShellDriver(self::DB_PATH,
-            "vendor/eslider/spatialite/bin/x64/mod_spatialite",
-            "vendor/eslider/spatialite/bin/x64/sqlite3");
+        $this->db = new SpatialiteNativeDriver(self::DB_PATH);
     }
 
+    /**
+     *
+     */
     public function testSpatialite()
     {
-        $tableName = "testgeo";
-        $geometryColumnName = 'geom';
-        $srid = 4326;
+        $client = self::createClient();
+        $container = $client->getContainer();
+        $geoTransporter = $container->get('geo_transporter');
+        $application = new Application($client->getKernel());
+        $exportCommand = new ExportCommand();
+        $exportCommand->setContainer($container);
+        $application->add($exportCommand);
 
-        // http://www.gaia-gis.it/gaia-sins/spatialite-cookbook/html/new-geom.html
-        $geomType = "POINT";
-        $wkt = 'POINT(30 10)';
-        $db = $this->db;
-
-        $db->dropTable($tableName);
-
-        if (!$db->hasTable($tableName)) {
-            $db->createTable($tableName);
-            $db->addGeometryColumn(
-                $tableName,
-                $geometryColumnName,
-                $srid,
-                $geomType
-            );
-        }
-
-//        $tableInfo = $db->getTableInfo($tableName);
-
-        for($i = 0; $i < 100; $i++){
-            // insert geo results
-            $id = $db->insert($tableName, array(
-                $geometryColumnName => new SpatialGeometry($wkt, SpatialGeometry::TYPE_WKT, $srid)
-            ));
-
-            // get results
-            $wktFromDb = $db->fetchColumn('SELECT
-            ST_ASTEXT(' . $db->quote($geometryColumnName) . ') AS ' . $db->quote($geometryColumnName) . '
-            FROM ' . $db->quote($tableName) . '
-            WHERE id=' . $id);
-            $this->assertEquals($wkt,$wktFromDb);
-        }
+        // test get find command by name
+        $command = $application->find($exportCommand->getName());
+        $this->assertEquals($command->getName(), $exportCommand->getName());
 
 
-        // daten löschen
-//        $db->emptyTable($tableName);
+        $commandTester = new CommandTester($exportCommand);
+        $commandTester->execute(array(
+            'command' => $exportCommand->getName(),
+            '--l' => array("Landkreise"),
+        ));
 
+        return array();
+    }
+
+    public function testindex(){
+
+        $client = self::createClient();
+        $container = $client->getContainer();
+
+        $geoTransporter = $container->get('geo_transporter');
+
+        $mapping = array(
+            0 => 'Hessen'
+        );
+
+        $geoTransporter->exportDataHandler('all',$mapping);
     }
 }

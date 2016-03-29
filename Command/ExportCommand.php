@@ -35,16 +35,40 @@ class ExportCommand extends ContainerAwareCommand {
             $data = $e->getData();
             $output->writeln("Start export: ". $data["id"]);
         });
+        $geoTransporter->on(GeoTransporter::EVENT_GET_DATABASE, function (Event $e) use ($output) {
+            $data = $e->getData();
+            $dbName = $data['db'];
+            $output->writeln("get Database: " . $dbName);
+        });
+        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TEMPLATE, function (Event $e) use ($output) {
+            $output->writeln("template dosn't exist, create template, just a moment...");
+        });
+        $geoTransporter->on(GeoTransporter::EVENT_CREATE_NEW_DATABASE, function (Event $e) use ($output) {
+            $data = $e->getData();
+            $dbName = $data['db'];
+            $output->writeln("create new Database: " . $dbName);
+        });
+        $geoTransporter->on(GeoTransporter::EVENT_DELETE_TABLE, function (Event $e) use ($output) {
+            $data = $e->getData();
+            $tableName = $data['tableName'];
+            $output->writeln("delete Table: " . $tableName);
+        });
+        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TABLE, function (Event $e) use ($output) {
+            $data = $e->getData();
+            $tableName = $data['tableName'];
+            $output->writeln("create Table: " . $tableName);
+        });
         $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_LOCATION, function (Event $e) use ($output) {
             $data = $e->getData();
             $location = $data["location"];
             $output->writeln("Start export location: " . $location["name"]);
         });
+
+
         if($input->getOption('all')){
             $geoTransporter->exportAll();
-            die;
+            return;
         }
-
         $locationIds = $input->getOption('l');
         $locationIds = empty($locationIds) ? 'all' : $locationIds;
 

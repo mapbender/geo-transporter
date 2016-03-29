@@ -19,8 +19,24 @@ class GeoTransporter
     /** Fires before mapping. */
     const EVENT_START_EXPORT_MAPPING = 'startMapping';
 
+    /** give database */
+    const EVENT_GET_DATABASE = 'getDatabase';
+
+    /** create template */
+    const EVENT_CREATE_TEMPLATE = 'createTemplate';
+
+    /** create new Database */
+    const EVENT_CREATE_NEW_DATABASE = 'createNewDatabase';
+
+    /** delete Table */
+    const EVENT_DELETE_TABLE = 'deletTable';
+
+    /** create new Table */
+    const EVENT_CREATE_TABLE = 'createTable';
+
     /** Fires before start export location */
     const EVENT_START_EXPORT_LOCATION = 'startExportLocation';
+
     /**
      * path to database template
      *
@@ -101,23 +117,29 @@ class GeoTransporter
         $columns = $this->getColumns($results,$source['geomColumn']);
         $hasExternalId = array_search('externId',$columns) !== false;
 
-        $this->dispatch(self::EVENT_START_EXPORT_MAPPING, array(
-            'mapping' => &$mapping,
-            'id' => $mappingId
-        ));
-
 
         /** @var SpatialiteShellDriver $db */
         $this->db = $db = $this->getDB($mapping['target']['path']);
 
         if($db->hasTable($tableName)) {
-            //$db->exec('SELECT DiscardGeometryColumn('.$db->quote($tableName).', '.$db->quote($source['geomColumn']).')');
+            $this->dispatch(self::EVENT_DELETE_TABLE, array(
+                'tableName' => $tableName
+            ));
             $sql = 'SELECT DiscardGeometryColumn(' . $db->escapeValue($tableName) . ', ' . $db->escapeValue($source['geomColumn']) . ')';
             $db->exec($sql);
             $db->dropTable($tableName);
         }
 
+        $this->dispatch(self::EVENT_CREATE_TABLE, array(
+            'tableName' => $tableName
+        ));
+
         $this->createTable($tableName,$columns,$source['geomColumn'],$source['srid'],$source['type']);
+
+        $this->dispatch(self::EVENT_START_EXPORT_MAPPING, array(
+            'mapping' => &$mapping,
+            'id' => $mappingId
+        ));
 
         $this->insertTable($results,$db,$tableName,$hasExternalId,$source['geomColumn'],$source ['srid']);
 
@@ -214,13 +236,19 @@ class GeoTransporter
     public function getDB($dbpath)
     {
         if ($this->existsDB($dbpath)) {
+            $this->dispatch(self::EVENT_GET_DATABASE, array(
+                'db' => $dbpath
+            ));
             return $this->createDB($dbpath);
         }
 
         if (!$this->existsDB($this->templateDbPath)) {
-             $this->createDB($this->templateDbPath);
+            $this->dispatch(self::EVENT_CREATE_TEMPLATE, array());
+            $this->createDB($this->templateDbPath);
         }
-
+        $this->dispatch(self::EVENT_CREATE_NEW_DATABASE, array(
+            'db' => $dbpath
+        ));
         return $this->createNewDB($dbpath);
     }
 
@@ -294,20 +322,19 @@ class GeoTransporter
     /**
      * handle console command
      *
-     * @param $locations
-     * @param $mappings
+     * @param $locations as Array
+     * @param $mappings as Array
      */
     public function exportDataHandler($locations,$mappings){
         if(!is_array($locations)){
 
-            $locations = $this->getLocations();
-
             if(!is_array($mappings)){
-                foreach($locations as $locationId => $location){
+                foreach($this->getLocations() as $locationId => $location){
                     $this->exportLocation($locationId);
                 }
             } else {
-                foreach($locations as $locationId => $location){
+
+                foreach($this->getLocations() as $locationId => $location){
                     $this->exportLocationWithDefindMapping($locationId,$mappings);
                 }
             }
