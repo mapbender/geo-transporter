@@ -18,16 +18,16 @@ class ExportCommand extends ContainerAwareCommand {
     /** @var OutputInterface */
     protected $output;
 
-    protected function configure() {
+    protected function configure()
+    {
         $this
             ->setDefinition(array(
-                new InputOption('all', null, InputOption::VALUE_NONE , "Export all locations and mappings"),
-                new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export location by name", "all"),
-                new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export mapping by object name", "all")
+                new InputOption('all', null, InputOption::VALUE_NONE, "Export all locations and mappings"),
+                new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Export location by names"),
+                new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY, "Export mapping by object names")
             ))
-
-            ->setDescription('Export all Tables in spatialite.')
-            ->setHelp('Export all Tables in spatialite.')
+            ->setDescription('Transport spatial data from doctrine to spatialite(sqlite) files.')
+            ->setHelp('Transport spatial data from doctrine database connection(PostgresSQL, Oracle, MySQL) to spatialite(sqlite) files.')
             ->setName('geo:export');
     }
 
@@ -77,20 +77,27 @@ class ExportCommand extends ContainerAwareCommand {
             }
         };
 
-        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_MAPPING, $eventHandler);
-        $geoTransporter->on(GeoTransporter::EVENT_GET_DATABASE, $eventHandler);
-        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TEMPLATE, $eventHandler);
-        $geoTransporter->on(GeoTransporter::EVENT_CREATE_NEW_DATABASE, $eventHandler);
-        $geoTransporter->on(GeoTransporter::EVENT_DELETE_TABLE, $eventHandler);
-        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TABLE, $eventHandler);
-        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_LOCATION, $eventHandler);
+        // Attach event handler
+        foreach (array(
+                     GeoTransporter::EVENT_CREATE_TEMPLATE,
+                     GeoTransporter::EVENT_GET_DATABASE,
+                     GeoTransporter::EVENT_CREATE_NEW_DATABASE,
+                     GeoTransporter::EVENT_CREATE_TABLE,
+                     GeoTransporter::EVENT_DELETE_TABLE,
+                     GeoTransporter::EVENT_START_EXPORT_LOCATION,
+                     GeoTransporter::EVENT_START_EXPORT_MAPPING,
+                 ) as $eventName) {
+            $geoTransporter->on($eventName, $eventHandler);
+        }
 
         if ($input->getOption('all')) {
             $geoTransporter->exportAll();
         } else {
+            $locations = $input->getOption('l');
+            $mappings  = $input->getOption('m');
             $geoTransporter->exportDataHandler(
-                $input->getOption('l'),
-                $input->getOption('m')
+                current($locations) ? $locations : null,
+                current($mappings) ? $mappings : null
             );
         }
     }

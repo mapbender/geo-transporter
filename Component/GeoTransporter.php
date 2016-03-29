@@ -29,7 +29,7 @@ class GeoTransporter
     const EVENT_CREATE_NEW_DATABASE = 'createNewDatabase';
 
     /** delete Table */
-    const EVENT_DELETE_TABLE = 'deletTable';
+    const EVENT_DELETE_TABLE = 'deleteTable';
 
     /** create new Table */
     const EVENT_CREATE_TABLE = 'createTable';
@@ -322,34 +322,32 @@ class GeoTransporter
     /**
      * handle console command
      *
-     * @param $locations as Array
-     * @param $mappings as Array
+     * @param array $locations Locations
+     * @param array $mappings Mappings
      */
-    public function exportDataHandler($locations,$mappings){
-        if(!is_array($locations)){
-
-            if(!is_array($mappings)){
-                foreach($this->getLocations() as $locationId => $location){
+    public function exportDataHandler($locations, $mappings)
+    {
+        if (!is_array($locations)) {
+            if (!is_array($mappings)) {
+                foreach ($this->getLocations() as $locationId => $location) {
                     $this->exportLocation($locationId);
                 }
             } else {
-
-                foreach($this->getLocations() as $locationId => $location){
-                    $this->exportLocationWithDefindMapping($locationId,$mappings);
+                foreach ($this->getLocations() as $locationId => $location) {
+                    $this->exportLocationWithDefindMapping($locationId, $mappings);
                 }
             }
         }
 
-        if(!is_array($mappings)){
-            foreach($locations as $locationId){
+        if (!is_array($mappings)) {
+            foreach ($locations as $locationId) {
                 $this->exportLocation($locationId);
             }
         } else {
-            foreach($locations as $locationId){
-                $this->exportLocationWithDefindMapping($locationId,$mappings);
+            foreach ($locations as $locationId) {
+                $this->exportLocationWithDefindMapping($locationId, $mappings);
             }
         }
-
     }
 
     /**
