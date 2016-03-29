@@ -15,6 +15,7 @@ use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
  */
 class ExportCommand extends ContainerAwareCommand {
 
+    /** @var OutputInterface */
     protected $output;
 
     protected function configure() {
@@ -44,53 +45,67 @@ class ExportCommand extends ContainerAwareCommand {
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
+        $this->output   = $output;
+        $command        = $this;
         $geoTransporter = $this->getContainer()->get('geo_transporter');
-        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_MAPPING, function (Event $e) use ($output) {
+        $eventHandler   = function (Event $e) use ($command) {
             $data = $e->getData();
-            $output->writeln("Start export: ". $data["id"]);
-        });
-        $geoTransporter->on(GeoTransporter::EVENT_GET_DATABASE, function (Event $e) use ($output) {
-            $data = $e->getData();
-            $dbName = $data['db'];
-            $output->writeln("get Database: " . $dbName);
-        });
-        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TEMPLATE, function (Event $e) use ($output) {
-            $output->writeln("template dosn't exist, create template, just a moment...");
-        });
-        $geoTransporter->on(GeoTransporter::EVENT_CREATE_NEW_DATABASE, function (Event $e) use ($output) {
-            $data = $e->getData();
-            $dbName = $data['db'];
-            $output->writeln("create new Database: " . $dbName);
-        });
-        $geoTransporter->on(GeoTransporter::EVENT_DELETE_TABLE, function (Event $e) use ($output) {
-            $data = $e->getData();
-            $tableName = $data['tableName'];
-            $output->writeln("delete Table: " . $tableName);
-        });
-        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TABLE, function (Event $e) use ($output) {
-            $data = $e->getData();
-            $tableName = $data['tableName'];
-            $output->writeln("create Table: " . $tableName);
-        });
-        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_LOCATION, function (Event $e) use ($output) {
-            $data = $e->getData();
-            $location = $data["location"];
-            $output->writeln("Start export location: " . $location["name"]);
-        });
+            switch ($e->getName()) {
+                case GeoTransporter::EVENT_START_EXPORT_MAPPING:
+                    $command->log("Start export: " . $data["id"]);
+                    break;
+                case GeoTransporter::EVENT_START_EXPORT_LOCATION:
+                    $command->log("Start export: " . $data["id"]);
+                    break;
+                case GeoTransporter::EVENT_GET_DATABASE:
+                    $command->log("Get Database: " . $data['db']);
+                    break;
+                case GeoTransporter::EVENT_CREATE_TEMPLATE:
+                    $command->log("Template dosn't exist, create template, just a moment...");
+                    break;
+                case GeoTransporter::EVENT_CREATE_NEW_DATABASE:
+                    $dbName = $data['db'];
+                    $command->log("Create new Database: " . $dbName);
+                    break;
+                case GeoTransporter::EVENT_DELETE_TABLE:
+                    $tableName = $data['tableName'];
+                    $command->log("Delete Table: " . $tableName);
+                    break;
+                case GeoTransporter::EVENT_CREATE_TABLE:
+                    $location = $data["location"];
+                    $command->log("Start export location: " . $location["name"]);
+                    break;
+            }
+        };
 
+        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_MAPPING, $eventHandler);
+        $geoTransporter->on(GeoTransporter::EVENT_GET_DATABASE, $eventHandler);
+        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TEMPLATE, $eventHandler);
+        $geoTransporter->on(GeoTransporter::EVENT_CREATE_NEW_DATABASE, $eventHandler);
+        $geoTransporter->on(GeoTransporter::EVENT_DELETE_TABLE, $eventHandler);
+        $geoTransporter->on(GeoTransporter::EVENT_CREATE_TABLE, $eventHandler);
+        $geoTransporter->on(GeoTransporter::EVENT_START_EXPORT_LOCATION, $eventHandler);
 
-        if($input->getOption('all')){
+        if ($input->getOption('all')) {
             $geoTransporter->exportAll();
             return;
         }
         $locationIds = $input->getOption('l');
         $locationIds = empty($locationIds) ? 'all' : $locationIds;
+        $mappingIds  = $input->getOption('m');
+        $mappingIds  = empty($mappingIds[0]) ? 'all' : $mappingIds;
 
-        $mappingIds = $input->getOption('m');
-        $mappingIds = empty($mappingIds[0]) ? 'all' : $mappingIds;
+        $geoTransporter->exportDataHandler($locationIds, $mappingIds);
+    }
 
-
-        $geoTransporter->exportDataHandler($locationIds,$mappingIds);
-
+    /**
+     * Log or output message
+     *
+     * @return mixed
+     * @internal param $data
+     */
+    protected function log($msg)
+    {
+        return $this->output->writeln($msg);
     }
 }
