@@ -368,7 +368,7 @@ class GeoTransporter
      * @param $eventName
      * @param callable $callback Event listener
      */
-    public function on($eventName, callable $callback)
+    public function on($eventName, $callback)
     {
         $this->dispatcher->addListener($eventName, $callback);
     }
