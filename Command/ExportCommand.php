@@ -55,7 +55,8 @@ class ExportCommand extends ContainerAwareCommand {
                     $command->log("Start export: " . $data["id"]);
                     break;
                 case GeoTransporter::EVENT_START_EXPORT_LOCATION:
-                    $command->log("Start export: " . $data["id"]);
+                    $location = $data["location"];
+                    $command->log("Start export location: " . $location["name"]);
                     break;
                 case GeoTransporter::EVENT_GET_DATABASE:
                     $command->log("Get Database: " . $data['db']);
