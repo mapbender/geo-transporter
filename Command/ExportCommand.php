@@ -19,11 +19,21 @@ class ExportCommand extends ContainerAwareCommand {
     protected $output;
 
     protected function configure() {
+        $arr = array();
         $this
             ->setDefinition(array(
-                new InputOption('all', null, InputOption::VALUE_NONE , "Export all locations and mappings"),
-                new InputOption('l', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export location by name", "all"),
-                new InputOption('m', '', InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY , "Export mapping by object name", "all")
+                new InputOption('all', null, InputOption::VALUE_NONE, "Export all locations and mappings"),
+                new InputOption(
+                    'l',
+                    '',
+                    InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY,
+                    "Export location by name", array()), // all
+                new InputOption(
+                    'm',
+                    '',
+                    InputOption::VALUE_OPTIONAL | InputOption::VALUE_IS_ARRAY ,
+                    "Export mapping by object name",
+                    array())
             ))
 
             ->setDescription('Export all Tables in spatialite.')
@@ -88,9 +98,11 @@ class ExportCommand extends ContainerAwareCommand {
         if ($input->getOption('all')) {
             $geoTransporter->exportAll();
         } else {
+            $locations = $input->getOption('l');
+            $mappings  = $input->getOption('m');
             $geoTransporter->exportDataHandler(
-                $input->getOption('l'),
-                $input->getOption('m')
+                count($locations)?$locations:'all',
+                count($mappings)?$mappings:'all'
             );
         }
     }
