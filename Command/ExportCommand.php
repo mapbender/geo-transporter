@@ -113,7 +113,7 @@ class ExportCommand extends ContainerAwareCommand {
      * @return mixed
      * @internal param $data
      */
-    protected function log($msg)
+    public function log($msg)
     {
         return $this->output->writeln($msg);
     }
