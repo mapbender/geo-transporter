@@ -269,8 +269,14 @@ class GeoTransporter
      * @param $dbpath
      * @return SpatialiteShellDriver
      */
-    public function createDB($dbpath){
+    public function createDB($dbpath)
+    {
         $driver = new SpatialiteShellDriver($dbpath);
+
+        if (!$driver->hasTable("geometry_columns")) {
+            $driver->initDbFile();
+        }
+
         return $driver;
     }
 
@@ -338,18 +344,17 @@ class GeoTransporter
                     $this->exportLocationWithDefindMapping($locationId,$mappings);
                 }
             }
-        }
-
-        if(!is_array($mappings)){
-            foreach($locations as $locationId){
-                $this->exportLocation($locationId);
+        }else{
+            if(!is_array($mappings)){
+                foreach($locations as $locationId){
+                    $this->exportLocation($locationId);
+                }
+            } else {
+                foreach($locations as $locationId){
+                    $this->exportLocationWithDefindMapping($locationId,$mappings);
+                }
             }
-        } else {
-            foreach($locations as $locationId){
-                $this->exportLocationWithDefindMapping($locationId,$mappings);
-            }
         }
-
     }
 
     /**
